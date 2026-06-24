@@ -13,6 +13,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.natron.commander.model.PlayerColor
+import com.natron.commander.ui.theme.CommanderTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -70,5 +73,33 @@ fun LifeAdjustButton(
                 textAlign = TextAlign.Center
             )
         }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 80, heightDp = 80)
+@Composable
+private fun LifeAdjustButtonDecreasePreview() {
+    CommanderTheme {
+        LifeAdjustButton(
+            label = "−",
+            delta = -1,
+            onAdjust = {},
+            buttonColor = PlayerColor.ISLAND.primary,
+            contentColor = PlayerColor.ISLAND.onSurface
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 80, heightDp = 80)
+@Composable
+private fun LifeAdjustButtonIncreasePreview() {
+    CommanderTheme {
+        LifeAdjustButton(
+            label = "+",
+            delta = 1,
+            onAdjust = {},
+            buttonColor = PlayerColor.ISLAND.primary,
+            contentColor = PlayerColor.ISLAND.onSurface
+        )
     }
 }

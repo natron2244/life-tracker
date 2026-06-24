@@ -15,11 +15,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
+import com.natron.commander.model.EliminationReason
 import com.natron.commander.model.Player
+import com.natron.commander.model.PlayerColor
+import com.natron.commander.ui.theme.CommanderTheme
 import com.natron.commander.ui.theme.OnSurfaceMuted
 import com.natron.commander.ui.theme.WarningRed
 
@@ -71,7 +79,8 @@ fun PlayerCard(
                             else theme.primary.copy(alpha = 0.2f)
                         )
                         .clickable(onClick = onCommanderDamageTap)
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .semantics { role = Role.Button; contentDescription = "Commander damage for ${player.name}" },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -110,6 +119,7 @@ fun PlayerCard(
                         .weight(2f)
                         .fillMaxHeight()
                         .clickable(onClick = onLifeTap)
+                        .semantics { role = Role.Button; contentDescription = "Life total ${player.lifeTotal}, tap to edit" }
                 ) { life ->
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Text(
@@ -152,7 +162,9 @@ fun PlayerCard(
                         text = "−",
                         style = MaterialTheme.typography.labelMedium,
                         color = OnSurfaceMuted,
-                        modifier = Modifier.clickable { onPoisonAdjust(-1) }
+                        modifier = Modifier
+                            .clickable { onPoisonAdjust(-1) }
+                            .semantics { role = Role.Button; contentDescription = "Decrease poison" }
                     )
                     Text(
                         text = "${player.poisonCounters}",
@@ -163,7 +175,9 @@ fun PlayerCard(
                         text = "+",
                         style = MaterialTheme.typography.labelMedium,
                         color = OnSurfaceMuted,
-                        modifier = Modifier.clickable { onPoisonAdjust(1) }
+                        modifier = Modifier
+                            .clickable { onPoisonAdjust(1) }
+                            .semantics { role = Role.Button; contentDescription = "Increase poison" }
                     )
                 }
             }
@@ -173,5 +187,42 @@ fun PlayerCard(
         if (player.isEliminated) {
             DeathOverlay(reason = player.eliminationReason)
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PlayerCardPreview() {
+    CommanderTheme {
+        PlayerCard(
+            player = Player(id = 0, name = "Aragorn", lifeTotal = 40, colorTheme = PlayerColor.ISLAND),
+            rotationDegrees = 0f,
+            onLifeAdjust = {},
+            onLifeTap = {},
+            onCommanderDamageTap = {},
+            onPoisonAdjust = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PlayerCardEliminatedPreview() {
+    CommanderTheme {
+        PlayerCard(
+            player = Player(
+                id = 1,
+                name = "Gandalf",
+                lifeTotal = 0,
+                colorTheme = PlayerColor.PLAINS,
+                isEliminated = true,
+                eliminationReason = EliminationReason.LIFE
+            ),
+            rotationDegrees = 0f,
+            onLifeAdjust = {},
+            onLifeTap = {},
+            onCommanderDamageTap = {},
+            onPoisonAdjust = {}
+        )
     }
 }

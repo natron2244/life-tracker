@@ -2,6 +2,8 @@ package com.natron.commander.ui.component
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
+import com.natron.commander.ui.theme.CommanderTheme
 import com.natron.commander.ui.theme.MythicGold
 import com.natron.commander.ui.theme.OnSurface
 import com.natron.commander.ui.theme.SurfaceVariant
@@ -30,4 +32,12 @@ fun NewGameDialog(
         containerColor = SurfaceVariant,
         titleContentColor = OnSurface
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun NewGameDialogPreview() {
+    CommanderTheme {
+        NewGameDialog(onReset = {}, onNewGame = {}, onDismiss = {})
+    }
 }

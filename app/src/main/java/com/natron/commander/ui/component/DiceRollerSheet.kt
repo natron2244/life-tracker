@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalStdlibApi::class)
+
 package com.natron.commander.ui.component
 
 import androidx.compose.animation.*
@@ -5,6 +7,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
+import androidx.compose.ui.tooling.preview.Preview
+import com.natron.commander.ui.theme.CommanderTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -46,7 +51,9 @@ fun DiceRollerSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 allDice.take(4).forEach { die ->
-                    DieButton(die = die, onClick = { onRoll(die) }, modifier = Modifier.weight(1f))
+                    key(die) {
+                        DieButton(die = die, onClick = { onRoll(die) }, modifier = Modifier.weight(1f))
+                    }
                 }
             }
             Row(
@@ -54,7 +61,9 @@ fun DiceRollerSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 allDice.drop(4).forEach { die ->
-                    DieButton(die = die, onClick = { onRoll(die) }, modifier = Modifier.weight(1f))
+                    key(die) {
+                        DieButton(die = die, onClick = { onRoll(die) }, modifier = Modifier.weight(1f))
+                    }
                 }
                 // Spacers to keep alignment with row above
                 repeat(4 - allDice.drop(4).size) {
@@ -66,7 +75,7 @@ fun DiceRollerSheet(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp),
+                    .wrapContentHeight(),
                 contentAlignment = Alignment.Center
             ) {
                 AnimatedContent(
@@ -115,5 +124,25 @@ private fun DieButton(die: Die, onClick: () -> Unit, modifier: Modifier = Modifi
         )
     ) {
         Text(die.label, style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DiceRollerSheetIdlePreview() {
+    CommanderTheme {
+        DiceRollerSheet(activeDiceResult = null, onRoll = {}, onDismiss = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DiceRollerSheetWithResultPreview() {
+    CommanderTheme {
+        DiceRollerSheet(
+            activeDiceResult = DiceResult(die = Die.D20, value = 17),
+            onRoll = {},
+            onDismiss = {}
+        )
     }
 }

@@ -3,6 +3,8 @@ package com.natron.commander.ui.component
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.tooling.preview.Preview
+import com.natron.commander.ui.theme.CommanderTheme
 import androidx.compose.ui.text.input.KeyboardType
 import com.natron.commander.ui.theme.CardBack
 import com.natron.commander.ui.theme.MythicGold
@@ -51,4 +53,12 @@ fun DirectInputDialog(
         containerColor = SurfaceVariant,
         titleContentColor = OnSurface
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DirectInputDialogPreview() {
+    CommanderTheme {
+        DirectInputDialog(currentLife = 28, onConfirm = {}, onDismiss = {})
+    }
 }

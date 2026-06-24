@@ -11,7 +11,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import com.natron.commander.model.EliminationReason
+import com.natron.commander.ui.theme.CommanderTheme
 import com.natron.commander.ui.theme.OnSurface
 import com.natron.commander.ui.theme.WarningRed
 
@@ -53,5 +55,21 @@ fun DeathOverlay(reason: EliminationReason?) {
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DeathOverlayLifePreview() {
+    CommanderTheme {
+        DeathOverlay(reason = EliminationReason.LIFE)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DeathOverlayCommanderPreview() {
+    CommanderTheme {
+        DeathOverlay(reason = EliminationReason.COMMANDER)
     }
 }

@@ -9,8 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import com.natron.commander.model.GameState
 import com.natron.commander.model.Player
+import com.natron.commander.model.PlayerColor
 import com.natron.commander.ui.component.*
 import com.natron.commander.ui.theme.*
 import com.natron.commander.viewmodel.GameViewModel
@@ -31,7 +33,7 @@ fun GameScreen(viewModel: GameViewModel, state: GameState) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(40.dp)
+                    .wrapContentHeight()
                     .padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -125,9 +127,6 @@ private fun PlayerGrid(
     }
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val w = maxWidth
-        val h = maxHeight
-
         when (players.size) {
             2 -> Column(Modifier.fillMaxSize()) {
                 Card(players[1], 180f, Modifier.weight(1f).fillMaxWidth())
@@ -199,5 +198,24 @@ private fun PlayerGrid(
                 Text("No players", color = com.natron.commander.ui.theme.OnSurfaceMuted)
             }
         }
+    }
+}
+
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
+@Composable
+private fun GameScreenPreview() {
+    val viewModel = GameViewModel()
+    val state = GameState(
+        isGameStarted = true,
+        playerCount = 4,
+        players = listOf(
+            Player(id = 0, name = "Aragorn", lifeTotal = 40, colorTheme = PlayerColor.ISLAND),
+            Player(id = 1, name = "Legolas", lifeTotal = 33, colorTheme = PlayerColor.FOREST),
+            Player(id = 2, name = "Gandalf", lifeTotal = 40, colorTheme = PlayerColor.PLAINS),
+            Player(id = 3, name = "Gimli", lifeTotal = 28, colorTheme = PlayerColor.MOUNTAIN)
+        )
+    )
+    CommanderTheme {
+        GameScreen(viewModel = viewModel, state = state)
     }
 }

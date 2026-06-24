@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalStdlibApi::class)
+
 package com.natron.commander.ui.screen
 
 import androidx.compose.foundation.background
@@ -20,23 +22,17 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import com.natron.commander.model.GameState
 import com.natron.commander.model.Player
 import com.natron.commander.model.PlayerColor
 import com.natron.commander.ui.theme.*
+import com.natron.commander.ui.theme.CommanderTheme
 import com.natron.commander.viewmodel.GameViewModel
 
 @Composable
 fun SetupScreen(viewModel: GameViewModel, state: GameState) {
     val focusManager = LocalFocusManager.current
-
-    // Ensure players list is initialized
-    LaunchedEffect(state.playerCount) {
-        val colors = PlayerColor.entries
-        if (state.players.size != state.playerCount) {
-            // Re-init players with correct count (ViewModel will handle merging)
-        }
-    }
 
     val players = remember(state.playerCount, state.players) {
         val colors = PlayerColor.entries
@@ -113,12 +109,15 @@ fun SetupScreen(viewModel: GameViewModel, state: GameState) {
 
         // Player config rows
         players.forEach { player ->
-            PlayerSetupRow(
-                player = player,
-                onNameChange = { viewModel.setPlayerName(player.id, it) },
-                onColorChange = { viewModel.setPlayerColor(player.id, it) },
-                focusManager = focusManager
-            )
+            val id = player.id
+            key(id) {
+                PlayerSetupRow(
+                    player = player,
+                    onNameChange = { viewModel.setPlayerName(id, it) },
+                    onColorChange = { viewModel.setPlayerColor(id, it) },
+                    focusManager = focusManager
+                )
+            }
             Spacer(Modifier.height(12.dp))
         }
 
@@ -127,8 +126,7 @@ fun SetupScreen(viewModel: GameViewModel, state: GameState) {
         Button(
             onClick = { viewModel.startGame() },
             modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
+                .fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MythicGold,
                 contentColor = CardBack
@@ -180,26 +178,28 @@ private fun PlayerSetupRow(
             onDismissRequest = { showColorMenu = false }
         ) {
             PlayerColor.entries.forEach { color ->
-                DropdownMenuItem(
-                    text = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .clip(CircleShape)
-                                    .background(color.primary)
-                            )
-                            Text(color.displayName, color = OnSurface)
+                key(color) {
+                    DropdownMenuItem(
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .clip(CircleShape)
+                                        .background(color.primary)
+                                )
+                                Text(color.displayName, color = OnSurface)
+                            }
+                        },
+                        onClick = {
+                            onColorChange(color)
+                            showColorMenu = false
                         }
-                    },
-                    onClick = {
-                        onColorChange(color)
-                        showColorMenu = false
-                    }
-                )
+                    )
+                }
             }
         }
 
@@ -224,5 +224,23 @@ private fun PlayerSetupRow(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
         )
+    }
+}
+
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp")
+@Composable
+private fun SetupScreenPreview() {
+    val viewModel = GameViewModel()
+    val state = GameState(
+        playerCount = 4,
+        players = listOf(
+            Player(id = 0, name = "Aragorn", lifeTotal = 40, colorTheme = PlayerColor.ISLAND),
+            Player(id = 1, name = "Legolas", lifeTotal = 40, colorTheme = PlayerColor.FOREST),
+            Player(id = 2, name = "Gandalf", lifeTotal = 40, colorTheme = PlayerColor.PLAINS),
+            Player(id = 3, name = "Gimli", lifeTotal = 40, colorTheme = PlayerColor.MOUNTAIN)
+        )
+    )
+    CommanderTheme {
+        SetupScreen(viewModel = viewModel, state = state)
     }
 }

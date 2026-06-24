@@ -23,16 +23,16 @@ fun AppNavigation(viewModel: GameViewModel) {
 
     NavHost(navController = navController, startDestination = Screen.Setup.route) {
         composable(Screen.Setup.route) {
-            LaunchedEffect(state.gameStarted) {
-                if (state.gameStarted) {
+            LaunchedEffect(state.isGameStarted) {
+                if (state.isGameStarted) {
                     navController.navigate(Screen.Game.route)
                 }
             }
             SetupScreen(viewModel = viewModel, state = state)
         }
         composable(Screen.Game.route) {
-            LaunchedEffect(state.gameStarted) {
-                if (!state.gameStarted) {
+            LaunchedEffect(state.isGameStarted) {
+                if (!state.isGameStarted) {
                     navController.navigate(Screen.Setup.route) {
                         popUpTo(0) { inclusive = true }
                     }

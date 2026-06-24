@@ -1,11 +1,18 @@
+@file:OptIn(ExperimentalStdlibApi::class)
+
 package com.natron.commander.viewmodel
 
-import androidx.lifecycle.ViewModel
-import com.natron.commander.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import androidx.lifecycle.ViewModel
+import com.natron.commander.model.Die
+import com.natron.commander.model.DiceResult
+import com.natron.commander.model.EliminationReason
+import com.natron.commander.model.GameState
+import com.natron.commander.model.Player
+import com.natron.commander.model.PlayerColor
 
 class GameViewModel : ViewModel() {
 
@@ -52,7 +59,7 @@ class GameViewModel : ViewModel() {
                 eliminationReason = null
             )
         }
-        _state.update { it.copy(players = players, gameStarted = true) }
+        _state.update { it.copy(players = players, isGameStarted = true) }
     }
 
     // endregion
@@ -61,28 +68,13 @@ class GameViewModel : ViewModel() {
 
     fun adjustLife(playerId: Int, delta: Int) {
         updatePlayer(playerId) { p ->
-            val newLife = p.lifeTotal + delta
-            val eliminated = newLife <= 0 || p.poisonCounters >= 10 || p.commanderDamage.values.any { it >= 21 }
-            val reason = when {
-                newLife <= 0 -> EliminationReason.LIFE
-                p.poisonCounters >= 10 -> EliminationReason.POISON
-                p.commanderDamage.values.any { it >= 21 } -> EliminationReason.COMMANDER
-                else -> null
-            }
-            p.copy(lifeTotal = newLife, isEliminated = eliminated, eliminationReason = reason)
+            checkElimination(p.copy(lifeTotal = p.lifeTotal + delta))
         }
     }
 
     fun setLifeDirect(playerId: Int, value: Int) {
         updatePlayer(playerId) { p ->
-            val eliminated = value <= 0 || p.poisonCounters >= 10 || p.commanderDamage.values.any { it >= 21 }
-            val reason = when {
-                value <= 0 -> EliminationReason.LIFE
-                p.poisonCounters >= 10 -> EliminationReason.POISON
-                p.commanderDamage.values.any { it >= 21 } -> EliminationReason.COMMANDER
-                else -> null
-            }
-            p.copy(lifeTotal = value, isEliminated = eliminated, eliminationReason = reason)
+            checkElimination(p.copy(lifeTotal = value))
         }
     }
 
@@ -90,29 +82,13 @@ class GameViewModel : ViewModel() {
         updatePlayer(receivingPlayerId) { p ->
             val current = p.commanderDamage[sourcePlayerId] ?: 0
             val newVal = (current + delta).coerceAtLeast(0)
-            val newMap = p.commanderDamage + (sourcePlayerId to newVal)
-            val eliminated = p.lifeTotal <= 0 || p.poisonCounters >= 10 || newMap.values.any { it >= 21 }
-            val reason = when {
-                p.lifeTotal <= 0 -> EliminationReason.LIFE
-                p.poisonCounters >= 10 -> EliminationReason.POISON
-                newMap.values.any { it >= 21 } -> EliminationReason.COMMANDER
-                else -> null
-            }
-            p.copy(commanderDamage = newMap, isEliminated = eliminated, eliminationReason = reason)
+            checkElimination(p.copy(commanderDamage = p.commanderDamage + (sourcePlayerId to newVal)))
         }
     }
 
     fun adjustPoison(playerId: Int, delta: Int) {
         updatePlayer(playerId) { p ->
-            val newPoison = (p.poisonCounters + delta).coerceAtLeast(0)
-            val eliminated = p.lifeTotal <= 0 || newPoison >= 10 || p.commanderDamage.values.any { it >= 21 }
-            val reason = when {
-                p.lifeTotal <= 0 -> EliminationReason.LIFE
-                newPoison >= 10 -> EliminationReason.POISON
-                p.commanderDamage.values.any { it >= 21 } -> EliminationReason.COMMANDER
-                else -> null
-            }
-            p.copy(poisonCounters = newPoison, isEliminated = eliminated, eliminationReason = reason)
+            checkElimination(p.copy(poisonCounters = (p.poisonCounters + delta).coerceAtLeast(0)))
         }
     }
 
@@ -181,7 +157,7 @@ class GameViewModel : ViewModel() {
     fun newGame() {
         _state.update {
             it.copy(
-                gameStarted = false,
+                isGameStarted = false,
                 showNewGameDialog = false,
                 activeDiceResult = null,
                 commanderDamageTargetPlayerId = null,
@@ -191,6 +167,19 @@ class GameViewModel : ViewModel() {
     }
 
     // endregion
+
+    private fun checkElimination(player: Player): Player {
+        val eliminated = player.lifeTotal <= 0
+            || player.poisonCounters >= 10
+            || player.commanderDamage.values.any { it >= 21 }
+        val reason = when {
+            player.lifeTotal <= 0 -> EliminationReason.LIFE
+            player.poisonCounters >= 10 -> EliminationReason.POISON
+            player.commanderDamage.values.any { it >= 21 } -> EliminationReason.COMMANDER
+            else -> null
+        }
+        return player.copy(isEliminated = eliminated, eliminationReason = reason)
+    }
 
     private fun updatePlayer(id: Int, transform: (Player) -> Player) {
         _state.update { state ->
