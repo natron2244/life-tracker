@@ -20,7 +20,8 @@ const bashRules = (settings.permissions?.allow ?? [])
 
 // Quick pre-check: if the command contains any chaining operator we need to
 // verify each segment individually rather than trusting a single allow rule.
-const CHAIN_PATTERN = /\|{1,2}|&&|;|`|\$\(/;
+// Negative lookbehind prevents \| (escaped pipe in grep patterns) from matching.
+const CHAIN_PATTERN = /(?<!\\)\|{1,2}|&&|;|`|\$\(/;
 
 // Recursively split a command string into its constituent segments, resolving
 // subshell substitutions before splitting on shell operators.
@@ -52,7 +53,8 @@ function extractSegments(command) {
   });
 
   // Step 3 — split the now-subshell-free string on flat chaining operators.
-  for (const seg of remaining.split(/\|{1,2}|&&|;/)) {
+  // Use negative lookbehind to skip \| (escaped pipes in grep patterns).
+  for (const seg of remaining.split(/(?<!\\)\|{1,2}|&&|;/)) {
     const trimmed = seg.trim();
     if (trimmed) result.push(trimmed);
   }
@@ -61,10 +63,12 @@ function extractSegments(command) {
 }
 
 // Return true if a single segment is covered by an allow rule.
-// Strips leading env-var assignments (e.g. "FOO=bar git log") before matching
-// so the variable prefix doesn't accidentally block an otherwise-allowed command.
+// Strips leading env-var assignments (e.g. "FOO=bar git log") and shell
+// redirections (2>&1, >/dev/null) before matching.
 function isSegmentAllowed(segment) {
-  const cmd = segment.replace(/^([A-Z_][A-Z0-9_]*=\S*\s+)+/, '').trim();
+  let cmd = segment.replace(/^([A-Z_][A-Z0-9_]*=\S*\s+)+/, '').trim();
+  // Strip redirect tokens: 2>&1, >/dev/null, 2>/dev/null, &>file, >>file, etc.
+  cmd = cmd.replace(/\s+\d*[<>][&>]?\S*/g, '').trim();
   if (!cmd) return true;
   return bashRules.some(rule => {
     if (rule.type === 'exact') return cmd === rule.value;
