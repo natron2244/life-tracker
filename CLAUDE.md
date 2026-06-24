@@ -2,6 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Permissions & Command Preferences
+
+The project allow-list in `.claude/settings.json` pre-approves certain commands so no permission prompt is shown. Prefer these over equivalents that would trigger a prompt:
+
+- **File reads** — use `Read`, `grep *`, `ls *`, `head *`, `tail *` rather than other inspection tools
+- **Text processing** — `sed *`, `sort *`, `uniq *`, `wc *`, `diff *`, `jq *`, `echo *`, `printf *`
+- **Build & test** — use the exact `./gradlew` forms listed in [Build & Run Commands](#build--run-commands); all are pre-approved
+- **Location/existence checks** — `which *`, `pwd`
+- **Web lookups** — `WebFetch` is pre-approved for fetching URLs
+
+Chain these freely — the bash-chain hook validates each segment against the same list, so a pipeline of allowed commands (`grep * | sort | uniq`) is auto-approved without prompting.
+
+Only reach for a command outside this list when nothing on it can accomplish the task — in that case a prompt is expected and fine.
+
 ## Build & Run Commands
 
 ```bash
