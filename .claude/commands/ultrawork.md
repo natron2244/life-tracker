@@ -2,6 +2,18 @@
 
 Orchestrate up to 3 sub-agents working in parallel on isolated git worktrees. You are the orchestrator: surface all questions to the user, detect file conflicts, enforce dependency order, and produce a safe merge report.
 
+## Step 0 — Load Project Standards
+
+Before doing anything else, read the project standards file:
+
+```
+Read: .claude/skills/project-standards.md
+```
+
+Store the full file content as a string named `PROJECT_STANDARDS`. You will inject this into every sub-agent prompt in Steps 2 and 4. If the file does not exist, set `PROJECT_STANDARDS` to an empty string and continue.
+
+---
+
 ## Step 1 — Gather Tasks
 
 If `$ARGUMENTS` is non-empty, parse it as a semicolon-separated or newline-separated list of tasks.
@@ -17,7 +29,7 @@ Assign each task a short ID: `task-1`, `task-2`, `task-3`, etc. Show the user th
 Call the Workflow tool with the script below. Pass this as `args`:
 
 ```json
-{ "tasks": [{ "id": "task-1", "description": "..." }, ...] }
+{ "tasks": [{ "id": "task-1", "description": "..." }, ...], "projectStandards": "<contents of PROJECT_STANDARDS>" }
 ```
 
 **Planning workflow script** (pass as the `script` parameter):
@@ -51,12 +63,16 @@ const PLAN_SCHEMA = {
   required: ['taskId', 'taskSummary', 'filesToModify', 'filesToCreate', 'dependsOnTaskIds', 'questions', 'implementationSteps'],
 }
 
-const { tasks } = args
+const { tasks, projectStandards } = args
 
 phase('Planning')
 log(`Collecting plans for ${tasks.length} tasks in parallel...`)
 
 const otherTasksSummary = tasks.map(t => `- ${t.id}: ${t.description}`).join('\n')
+
+const standardsBlock = projectStandards
+  ? `\n## Project Coding Standards\nYou MUST follow these standards in your plan and implementation steps:\n\n${projectStandards}\n`
+  : ''
 
 const plans = await parallel(tasks.map(t => () =>
   agent(
@@ -70,11 +86,11 @@ Your job:
 1. Identify every file that would need to be modified or created to complete this task.
 2. Identify which of the other tasks your implementation depends on — list their IDs in dependsOnTaskIds. A dependency means your code requires that task's changes to already be in place before you can implement yours.
 3. List any questions that must be answered before implementation can begin.
-4. Write clear, ordered implementation steps.
+4. Write clear, ordered implementation steps that comply with the project standards below.
 
 Other tasks running in parallel (for dependency identification):
 ${otherTasksSummary}
-
+${standardsBlock}
 Return your structured plan.`,
     { schema: PLAN_SCHEMA, label: `plan:${t.id}`, phase: 'Planning' }
   )
@@ -131,7 +147,7 @@ Because worktree branch names are only known after execution, run each batch as 
 
 For each batch (in order):
 
-1. Build the args for this batch. For each task, include `dependsOnTaskIds` and the **resolved branch names** from completed tasks (from prior batch results).
+1. Build the args for this batch. For each task, include `dependsOnTaskIds` and the **resolved branch names** from completed tasks (from prior batch results). Also include `projectStandards` (the `PROJECT_STANDARDS` string you loaded in Step 0) at the top level of the args object.
 2. Call the Workflow tool with the execution script below.
 3. After the workflow returns, record each task's `branch` name for use in the next batch.
 
@@ -157,12 +173,16 @@ const RESULT_SCHEMA = {
   required: ['taskId', 'success', 'branch', 'filesChanged', 'summary', 'testInstructions'],
 }
 
-const { tasks } = args
+const { tasks, projectStandards } = args
 // tasks: Array<{ taskId, description, plan, answers, dependsOnBranches }>
 // dependsOnBranches: branch names from prior batches (resolved by orchestrator)
 
 phase('Execute')
 log(`Executing ${tasks.length} tasks in parallel on isolated worktrees...`)
+
+const standardsBlock = projectStandards
+  ? `\n## Project Coding Standards — YOU MUST FOLLOW THESE\n${projectStandards}\n`
+  : ''
 
 const results = await parallel(tasks.map(t => () => {
   const mergeBlock = (t.dependsOnBranches && t.dependsOnBranches.length > 0)
@@ -181,7 +201,7 @@ Files to modify: ${(t.plan.filesToModify || []).join(', ') || 'none'}
 Files to create: ${(t.plan.filesToCreate || []).join(', ') || 'none'}
 Steps:
 ${(t.plan.implementationSteps || []).map((s, i) => `${i + 1}. ${s}`).join('\n')}
-
+${standardsBlock}
 After completing all changes:
 - Run "git branch --show-current" and include the branch name in your response
 - List every file you actually modified or created
