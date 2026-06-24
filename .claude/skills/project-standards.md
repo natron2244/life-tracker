@@ -62,15 +62,16 @@ When working on any task in this repository, follow this sequence exactly:
 
 ### Import Order
 
-Organize imports in this order. No star imports anywhere — explicit imports only.
+Organize imports in this order.
 
 1. Kotlin stdlib (`kotlin.*`)
-2. Android framework (`android.*`)
-3. AndroidX / Jetpack (`androidx.*`)
-4. Compose and Material 3 (`androidx.compose.*`)
-5. Project (`com.natron.commander.*`)
+2. JetBrains extensions (`kotlinx.*`)
+3. Android framework (`android.*`)
+4. AndroidX / Jetpack (`androidx.*`)
+5. Compose and Material 3 (`androidx.compose.*`)
+6. Project (`com.natron.commander.*`)
 
-Remove all unused imports before finishing a task. The existing `import com.natron.commander.model.*` in `GameViewModel.kt` is a known violation to be cleaned up.
+**Star imports:** No star imports for project-internal packages (`com.natron.commander.*`) or `android.*`. Star imports are permitted for `androidx.compose.*` packages (e.g., `layout.*`, `material3.*`, `animation.*`) — Android Studio generates these by default and Google's official Compose samples use them. Remove unused imports before finishing a task. The existing `import com.natron.commander.model.*` in `GameViewModel.kt` is a known violation to be cleaned up.
 
 ### File Structure
 
@@ -91,6 +92,8 @@ Organize code within files in this order:
 @Composable
 fun GameScreen(viewModel: GameViewModel, state: GameState) { ... }
 ```
+
+> **Note:** This project collects state at the navigation level and passes it as a parameter. Google's current architecture guidance recommends collecting state *inside* the screen with `collectAsStateWithLifecycle()`. This project uses the nav-level approach as a deliberate consistency choice — do not change it without explicit approval.
 
 **Components** receive data + callbacks only — no ViewModel, no StateFlow:
 ```kotlin
@@ -134,7 +137,7 @@ fun PlayerCard(
   ```kotlin
   players.forEach { player -> key(player.id) { PlayerCard(...) } }
   ```
-- **Lambda stability** — never write `{ viewModel.fn(player.id) }` directly inside a repeated composable. Capture the id in a named `val` outside the lambda, or pass a stable callback reference. Creating a new lambda on every recomposition defeats Compose's skip optimization.
+- **Lambda stability** — for composables produced in a loop over **player data** (dynamic lists), capture the player ID in a `val` outside the lambda to help Compose's skip optimization: `val id = player.id` then `onLifeAdjust = { viewModel.adjustLife(id, it) }`. For loops over **static enum values** (`Die`, `PlayerColor`), the Compose compiler's strong-skipping mode handles stability automatically — manual capture is not required.
 
 ### Material 3 usage
 
